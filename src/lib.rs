@@ -1,42 +1,29 @@
 mod utils;
 
-use wasm_bindgen::prelude::*;
+use js_sys;
+use wasm_bindgen::prelude::wasm_bindgen;
 
-// when the `wee_alloc` feature is enabled, use `wee_alloc` as the global
-// allocator
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
-#[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Cell {
-    Dead = 0,
-    Alive = 1,
-}
-
-#[wasm_bindgen]
 pub struct Grid {
     width: u32,
     height: u32,
-    cells: Vec<Cell>,
+    cells: Vec<u8>,
     neighbor_locations: [[u32; 2]; 8],
 }
 
 #[wasm_bindgen]
 impl Grid {
     pub fn new() -> Grid {
+        utils::set_panic_hook();
+
         let width = 64;
         let height = 64;
         let cells = (0..width * height)
-            .map(|i| {
-                if i % 2 == 0 || i % 7 == 0 {
-                    Cell::Alive
-                } else {
-                    Cell::Dead
-                }
-            })
+            .map(|_| if js_sys::Math::random() < 0.5 { 1 } else { 0 })
             .collect();
         let neighbor_locations = [
             [height - 1, width - 1],
@@ -65,7 +52,7 @@ impl Grid {
         self.height
     }
 
-    pub fn cells(&self) -> *const Cell {
+    pub fn cells(&self) -> *const u8 {
         self.cells.as_ptr()
     }
 
@@ -95,10 +82,10 @@ impl Grid {
                 let index = self.get_index(row, col);
 
                 cells_step[index] = match (self.cells[index], self.get_neighbor_count(row, col)) {
-                    (Cell::Alive, count) if count < 2 => Cell::Dead,
-                    (Cell::Alive, 2) | (Cell::Alive, 3) => Cell::Alive,
-                    (Cell::Alive, count) if count > 3 => Cell::Dead,
-                    (Cell::Dead, 3) => Cell::Alive,
+                    (1, count) if count < 2 => 0,
+                    (1, 2) | (1, 3) => 1,
+                    (1, count) if count > 3 => 0,
+                    (0, 3) => 1,
                     (previous_state, _) => previous_state,
                 };
             }
