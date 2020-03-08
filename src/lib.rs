@@ -76,17 +76,16 @@ impl Grid {
     pub fn step(&mut self) {
         let mut cells_step = self.cells.clone();
 
-        // TODO: loop through cells directly
         for row in 0..self.height {
             for col in 0..self.width {
                 let index = self.get_index(row, col);
 
                 cells_step[index] = match (self.cells[index], self.get_neighbor_count(row, col)) {
                     (1, count) if count < 2 => 0,
-                    (1, 2) | (1, 3) => 1,
                     (1, count) if count > 3 => 0,
+                    (1, _) => 1,
                     (0, 3) => 1,
-                    (previous_state, _) => previous_state,
+                    _ => 0,
                 };
             }
         }
