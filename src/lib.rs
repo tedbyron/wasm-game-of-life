@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::pedantic)]
+
 mod utils;
 
 use js_sys;
@@ -8,6 +10,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
+#[derive(Default)]
 pub struct Grid {
     width: u32,
     height: u32,
@@ -17,7 +20,8 @@ pub struct Grid {
 
 #[wasm_bindgen]
 impl Grid {
-    pub fn new() -> Grid {
+    #[must_use]
+    pub fn new() -> Self {
         utils::set_panic_hook();
 
         let width = 64;
@@ -36,7 +40,7 @@ impl Grid {
             [1, 1],
         ];
 
-        Grid {
+        Self {
             width,
             height,
             cells,
@@ -44,14 +48,17 @@ impl Grid {
         }
     }
 
+    #[must_use]
     pub fn width(&self) -> u32 {
         self.width
     }
 
+    #[must_use]
     pub fn height(&self) -> u32 {
         self.height
     }
 
+    #[must_use]
     pub fn cells(&self) -> *const u8 {
         self.cells.as_ptr()
     }
@@ -63,33 +70,31 @@ impl Grid {
     fn get_neighbor_count(&self, row: u32, col: u32) -> u8 {
         let mut count = 0;
 
-        for delta in self.neighbor_locations.iter() {
+        for delta in &self.neighbor_locations {
             count += self.cells[self.get_index(
                 (row + delta[0]) % self.height,
                 (col + delta[1]) % self.width,
-            )] as u8;
+            )];
         }
 
         count
     }
 
     pub fn step(&mut self) {
-        let mut cells_step = self.cells.clone();
+        let mut cells_next = self.cells.clone();
 
         for row in 0..self.height {
             for col in 0..self.width {
                 let index = self.get_index(row, col);
 
-                cells_step[index] = match (self.cells[index], self.get_neighbor_count(row, col)) {
-                    (1, count) if count < 2 => 0,
-                    (1, count) if count > 3 => 0,
-                    (1, _) => 1,
-                    (0, 3) => 1,
+                cells_next[index] = match (self.cells[index], self.get_neighbor_count(row, col)) {
+                    (1, count) if count < 2 || count > 3 => 0,
+                    (1, _) | (0, 3) => 1,
                     _ => 0,
                 };
             }
         }
 
-        self.cells = cells_step;
+        self.cells = cells_next;
     }
 }
