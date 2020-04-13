@@ -55,9 +55,18 @@ impl Automaton {
     /// `new_width` is less than `width`, the automaton's rows are simply
     /// truncated.
     pub fn set_width(&mut self, new_width: u16) {
+        // TODO: resize in place to reduce allocations
+        let new_width_usize = usize::from(new_width);
+        self.cells = self
+            .cells
+            .chunks_exact(usize::from(self.width))
+            .flat_map(|chunk| {
+                let mut chunk_vec = chunk.to_vec();
+                chunk_vec.resize(new_width_usize, 0);
+                chunk_vec
+            })
+            .collect();
         self.width = new_width;
-        self.cells
-            .resize(usize::from(new_width) * usize::from(self.height), 0); // FIXME
         self.neighbor_deltas = get_neighbor_deltas(new_width, self.height);
     }
 
@@ -74,9 +83,9 @@ impl Automaton {
     /// `new_height` is less than `height`, the automaton's grid is simply
     /// truncated.
     pub fn set_height(&mut self, new_height: u16) {
-        self.height = new_height;
         self.cells
-            .resize(usize::from(self.width) * usize::from(new_height), 0); // FIXME
+            .resize(usize::from(self.width) * usize::from(new_height), 0);
+        self.height = new_height;
         self.neighbor_deltas = get_neighbor_deltas(self.width, new_height);
     }
 
@@ -105,9 +114,9 @@ impl Automaton {
 
     /// Sets the cell state of all the automaton's cells to `n`.
     pub fn set_all_cells(&mut self, n: u8) {
-        self.cells = std::iter::repeat(n)
-            .take(usize::from(self.width) * usize::from(self.height))
-            .collect();
+        for cell in &mut self.cells {
+            *cell = n;
+        }
     }
 
     /// Calculates and sets the next state of all cells in the automaton.

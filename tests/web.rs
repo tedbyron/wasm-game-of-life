@@ -23,17 +23,50 @@ mod tests {
 
     #[wasm_bindgen_test]
     pub fn test_automaton_set_cells() {
-        let mut a = Automaton::new(2, 2);
-        a.set_cells(&[0, 0, 1, 1], &[0, 1, 0, 1]);
-        assert_eq!(a.cells_vec(), vec![1, 1, 1, 1]);
+        let mut a = Automaton::new(3, 3);
+        a.set_cells(&[0, 0, 0, 1, 1, 1, 2, 2, 2], &[0, 1, 2, 0, 1, 2, 0, 1, 2]);
+        assert_eq!(a.cells_vec(), vec![1, 1, 1, 1, 1, 1, 1, 1, 1]);
     }
 
     #[wasm_bindgen_test]
     pub fn test_automaton_set_all_cells() {
-        let mut a = Automaton::new(2, 2);
+        let mut a = Automaton::new(3, 3);
         a.set_all_cells(1);
+        assert_eq!(a.cells_vec(), vec![1, 1, 1, 1, 1, 1, 1, 1, 1]);
         a.set_all_cells(0);
-        assert_eq!(a.cells_vec(), vec![0, 0, 0, 0]);
+        assert_eq!(a.cells_vec(), vec![0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[wasm_bindgen_test]
+    pub fn test_automaton_set_width_larger() {
+        let mut a = Automaton::new(3, 3);
+        a.set_all_cells(1);
+        a.set_width(4);
+        assert_eq!(a.cells_vec(), vec![1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0]);
+    }
+
+    #[wasm_bindgen_test]
+    pub fn test_automaton_set_width_smaller() {
+        let mut a = Automaton::new(3, 3);
+        a.set_all_cells(1);
+        a.set_width(2);
+        assert_eq!(a.cells_vec(), vec![1, 1, 1, 1, 1, 1]);
+    }
+
+    #[wasm_bindgen_test]
+    pub fn test_automaton_set_height_larger() {
+        let mut a = Automaton::new(3, 3);
+        a.set_all_cells(1);
+        a.set_height(4);
+        assert_eq!(a.cells_vec(), vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0]);
+    }
+
+    #[wasm_bindgen_test]
+    pub fn test_automaton_set_height_smaller() {
+        let mut a = Automaton::new(3, 3);
+        a.set_all_cells(1);
+        a.set_height(4);
+        assert_eq!(a.cells_vec(), vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0]);
     }
 
     #[wasm_bindgen_test]
