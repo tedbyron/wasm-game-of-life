@@ -1,4 +1,4 @@
-import { Grid } from 'wasm-game-of-life';
+import { Automaton } from 'wasm-game-of-life';
 import { memory } from 'wasm-game-of-life/wasm_game_of_life_bg';
 
 const CELL_SIZE = 5;
@@ -6,9 +6,9 @@ const GRID_COLOR = '#cccccc';
 const DEAD_COLOR = '#ffffff';
 const ALIVE_COLOR = '#000000';
 
-const grid = Grid.new();
-const width = grid.width();
-const height = grid.height();
+const automaton = Automaton.new(64, 64);
+const width = automaton.width();
+const height = automaton.height();
 
 const canvas = document.getElementById("game-canvas");
 canvas.height = (CELL_SIZE + 1) * height + 1;
@@ -17,7 +17,7 @@ canvas.width = (CELL_SIZE + 1) * width + 1;
 const context = canvas.getContext('2d');
 
 const render = () => {
-  grid.step();
+  automaton.step();
 
   drawGrid();
   drawCells();
@@ -45,7 +45,7 @@ const drawGrid = () => {
 const getIndex = (row, column) => row * width + column;
 
 const drawCells = () => {
-  const cellsPtr = grid.cells();
+  const cellsPtr = automaton.cells();
   const cells = new Uint8Array(memory.buffer, cellsPtr, width * height);
 
   context.beginPath();
