@@ -86,6 +86,11 @@ canvas.addEventListener('click', (e) => {
   drawCells();
 })
 
+const generationSpan = document.getElementById('generation');
+const updateGeneration = () => {
+  generationSpan.innerText = automaton.generation();
+};
+
 const playPauseButton = document.getElementById('play-pause');
 const isPaused = () => animationId === null;
 
@@ -108,10 +113,12 @@ playPauseButton.addEventListener('click', (e) => {
   }
 });
 
-const generationSpan = document.getElementById('generation');
-const updateGeneration = () => {
-  generationSpan.innerText = automaton.generation();
-};
+document.getElementById('step').addEventListener('click', (e) => {
+  automaton.step(stepSize);
+  drawGrid();
+  drawCells();
+  updateGeneration();
+});
 
 let stepSizeInput = document.getElementById('step-size');
 stepSizeInput.addEventListener('change', (e) => {

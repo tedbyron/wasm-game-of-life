@@ -162,8 +162,9 @@ impl Automaton {
             }
 
             self.cells = cells_next;
-            self.generation += 1;
         }
+
+        self.generation += n;
     }
 
     /// Returns the index of a cell in the automaton.
