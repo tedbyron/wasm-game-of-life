@@ -7,7 +7,6 @@ mod utils;
 
 use js_sys;
 use wasm_bindgen::prelude::wasm_bindgen;
-// TODO: logging - use web_sys::console::log_1 as log;
 
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
@@ -16,17 +15,18 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 /// A two-dimensional cellular automaton with a finite grid of cells.
 #[wasm_bindgen]
 pub struct Automaton {
-    width: u16,
-    height: u16,
+    width: usize,
+    height: usize,
     cells: Vec<u8>,
-    neighbor_deltas: [[u16; 2]; 8],
+    generation: usize,
+    neighbor_deltas: [[usize; 2]; 8],
 }
 
 #[wasm_bindgen]
 impl Automaton {
     /// Constructs a new automaton with cell states randomly assigned to 0 or 1.
     #[must_use]
-    pub fn new(width: u16, height: u16) -> Self {
+    pub fn new(width: usize, height: usize) -> Self {
         utils::set_panic_hook();
 
         let cells = (0..width * height)
@@ -38,13 +38,14 @@ impl Automaton {
             width,
             height,
             cells,
+            generation: 0,
             neighbor_deltas,
         }
     }
 
     /// Returns the width (horizontal length) of the automaton.
     #[must_use]
-    pub fn width(&self) -> u16 {
+    pub fn width(&self) -> usize {
         self.width
     }
 
@@ -54,15 +55,13 @@ impl Automaton {
     /// extended by the difference, with each additional cell filled with 0. If
     /// `new_width` is less than `width`, the automaton's rows are simply
     /// truncated.
-    pub fn set_width(&mut self, new_width: u16) {
-        // TODO: resize in place to reduce allocations
-        let new_width_usize = usize::from(new_width);
+    pub fn set_width(&mut self, new_width: usize) {
         self.cells = self
             .cells
-            .chunks_exact(usize::from(self.width))
+            .chunks_exact(self.width)
             .flat_map(|chunk| {
                 let mut chunk_vec = chunk.to_vec();
-                chunk_vec.resize(new_width_usize, 0);
+                chunk_vec.resize(new_width, 0);
                 chunk_vec
             })
             .collect();
@@ -72,7 +71,7 @@ impl Automaton {
 
     /// Returns the height (vertical length) of the automaton.
     #[must_use]
-    pub fn height(&self) -> u16 {
+    pub fn height(&self) -> usize {
         self.height
     }
 
@@ -82,9 +81,8 @@ impl Automaton {
     /// extended by the difference, with each additional row filled with 0. If
     /// `new_height` is less than `height`, the automaton's grid is simply
     /// truncated.
-    pub fn set_height(&mut self, new_height: u16) {
-        self.cells
-            .resize(usize::from(self.width) * usize::from(new_height), 0);
+    pub fn set_height(&mut self, new_height: usize) {
+        self.cells.resize(self.width * new_height, 0);
         self.height = new_height;
         self.neighbor_deltas = get_neighbor_deltas(self.width, new_height);
     }
@@ -101,13 +99,16 @@ impl Automaton {
         self.cells.clone()
     }
 
-    /// Sets the state of cells in locations definded by `rows` and `cols` to 1
-    /// (alive, first-generation).
-    pub fn set_cells(&mut self, rows: &[u16], cols: &[u16]) {
-        if rows.len() == cols.len() {
-            for (&row, &col) in rows.iter().zip(cols.iter()) {
-                let idx = self.index(row, col);
-                self.cells[idx] = 1;
+    /// Sets the state of cells in `locations` to 1 (alive, first-generation).
+    pub fn set_cells(&mut self, locations: &[usize]) {
+        for (&row, &col) in locations
+            .iter()
+            .step_by(2)
+            .zip(locations.iter().skip(1).step_by(2))
+        {
+            let idx = self.index(row, col);
+            if let Some(cell) = self.cells.get_mut(idx) {
+                *cell = 1;
             }
         }
     }
@@ -117,6 +118,11 @@ impl Automaton {
         for cell in &mut self.cells {
             *cell = n;
         }
+    }
+
+    #[must_use]
+    pub fn generation(&self) -> usize {
+        self.generation
     }
 
     /// Calculates and sets the next state of all cells in the automaton.
@@ -136,15 +142,16 @@ impl Automaton {
         }
 
         self.cells = cells_next;
+        self.generation += 1;
     }
 
     /// Returns the index of a cell in the automaton.
-    fn index(&self, row: u16, column: u16) -> usize {
-        usize::from(row) * usize::from(self.width) + usize::from(column)
+    fn index(&self, row: usize, col: usize) -> usize {
+        row * self.width + col
     }
 
     /// Returns the count of a cell's live, first-generation neighbors.
-    fn neighbor_count(&self, row: u16, col: u16) -> u8 {
+    fn neighbor_count(&self, row: usize, col: usize) -> u8 {
         self.neighbor_deltas.iter().fold(0, |count, delta| {
             match self.cells[self.index(
                 (row + delta[0]) % self.height,
@@ -159,7 +166,7 @@ impl Automaton {
 
 /// Returns the offsets of neighboring cell locations; these deltas are required
 /// for an automaton's `get_neighbor_count` method.
-fn get_neighbor_deltas(width: u16, height: u16) -> [[u16; 2]; 8] {
+fn get_neighbor_deltas(width: usize, height: usize) -> [[usize; 2]; 8] {
     [
         [height - 1, width - 1],
         [height - 1, 0],

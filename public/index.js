@@ -10,19 +10,21 @@ const automaton = Automaton.new(64, 64);
 const width = automaton.width();
 const height = automaton.height();
 
-const canvas = document.getElementById("game-canvas");
+const canvas = document.getElementById('game-canvas');
 canvas.height = (CELL_SIZE + 1) * height + 1;
 canvas.width = (CELL_SIZE + 1) * width + 1;
 
 const context = canvas.getContext('2d');
+let animationId = null;
 
 const render = () => {
   automaton.step();
+  updateGeneration();
 
   drawGrid();
   drawCells();
 
-  requestAnimationFrame(render);
+  animationId = requestAnimationFrame(render);
 };
 
 const drawGrid = () => {
@@ -42,8 +44,6 @@ const drawGrid = () => {
   context.stroke();
 };
 
-const getIndex = (row, column) => row * width + column;
-
 const drawCells = () => {
   const cellsPtr = automaton.cells();
   const cells = new Uint8Array(memory.buffer, cellsPtr, width * height);
@@ -52,7 +52,7 @@ const drawCells = () => {
 
   for (let row = 0; row < height; row++) {
     for (let col = 0; col < width; col++) {
-      context.fillStyle = cells[getIndex(row, col)] === 0
+      context.fillStyle = cells[row * width + col] === 0
         ? DEAD_COLOR
         : ALIVE_COLOR;
 
@@ -68,6 +68,33 @@ const drawCells = () => {
   context.stroke();
 };
 
+const playPauseButton = document.getElementById('play-pause');
+const isPaused = () => animationId === null;
+
+const play = () => {
+  playPauseButton.textContent = 'Pause';
+  render();
+};
+
+const pause = () => {
+  playPauseButton.textContent = 'Start';
+  cancelAnimationFrame(animationId);
+  animationId = null;
+};
+
+playPauseButton.addEventListener('click', (e) => {
+  if (isPaused()) {
+    play();
+  } else {
+    pause();
+  }
+});
+
+const generation = document.getElementById('generation');
+const updateGeneration = () => {
+  generation.textContent = automaton.generation();
+};
+
 drawGrid();
 drawCells();
-requestAnimationFrame(render);
+pause();

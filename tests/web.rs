@@ -1,12 +1,20 @@
+use std::iter;
 use wasm_bindgen_test::wasm_bindgen_test;
 use wasm_game_of_life::Automaton;
 
-fn build_automaton(width: u16, height: u16, rows: &[u16], cols: &[u16]) -> Automaton {
+fn flatten_locations(locations: &[(usize, usize)]) -> Vec<usize> {
+    locations
+        .iter()
+        .flat_map(|l| iter::once(l.0).chain(iter::once(l.1)))
+        .collect()
+}
+
+fn build_automaton(width: usize, height: usize, locations: &[(usize, usize)]) -> Automaton {
     let mut a = Automaton::new(width, height);
     a.set_width(width);
     a.set_height(height);
     a.set_all_cells(0);
-    a.set_cells(rows, cols);
+    a.set_cells(&flatten_locations(locations));
     a
 }
 
@@ -19,12 +27,23 @@ mod tests {
         assert_eq!(a.width(), 64);
         assert_eq!(a.height(), 64);
         assert_eq!(a.cells_vec().len(), 64 * 64);
+        assert_eq!(a.generation(), 0);
     }
 
     #[wasm_bindgen_test]
     pub fn test_automaton_set_cells() {
         let mut a = Automaton::new(3, 3);
-        a.set_cells(&[0, 0, 0, 1, 1, 1, 2, 2, 2], &[0, 1, 2, 0, 1, 2, 0, 1, 2]);
+        a.set_cells(&flatten_locations(&[
+            (0, 0),
+            (0, 1),
+            (0, 2),
+            (1, 0),
+            (1, 1),
+            (1, 2),
+            (2, 0),
+            (2, 1),
+            (2, 2),
+        ]));
         assert_eq!(a.cells_vec(), vec![1, 1, 1, 1, 1, 1, 1, 1, 1]);
     }
 
@@ -71,8 +90,8 @@ mod tests {
 
     #[wasm_bindgen_test]
     pub fn test_automaton_wrapping_1() {
-        let mut a = build_automaton(2, 2, &[0, 0], &[0, 1]);
-        let a_1 = build_automaton(2, 2, &[0, 0], &[0, 1]);
+        let mut a = build_automaton(2, 2, &[(0, 0), (0, 1)]);
+        let a_1 = build_automaton(2, 2, &[(0, 0), (0, 1)]);
 
         a.step();
         assert_eq!(a.cells_vec(), a_1.cells_vec());
@@ -80,8 +99,8 @@ mod tests {
 
     #[wasm_bindgen_test]
     pub fn test_automaton_wrapping_2() {
-        let mut a = build_automaton(6, 6, &[1, 2, 3, 3, 3], &[2, 3, 1, 2, 3]);
-        let a_1 = build_automaton(6, 6, &[2, 2, 3, 3, 4], &[1, 3, 2, 3, 2]);
+        let mut a = build_automaton(6, 6, &[(1, 2), (2, 3), (3, 1), (3, 2), (3, 3)]);
+        let a_1 = build_automaton(6, 6, &[(2, 1), (2, 3), (3, 2), (3, 3), (4, 2)]);
 
         a.step();
         assert_eq!(a.cells_vec(), a_1.cells_vec());
