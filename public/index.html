@@ -23,8 +23,12 @@
       browser.</noscript
     >
     <div>
-      <button id="play-pause"></button>
+      <button id="play-pause">Play</button>
       <span id="generation">0</span>
+      <input id="step-size" type="number" value="1" min="1" />
+      <button id="reset">Reset</button>
+      <button id="randomize">Randomize</button>
+      <input id="randomize-percent" type="number" value="50" min="0" max="100" />
     </div>
     <canvas id="game-canvas"></canvas>
     <script src="./bootstrap.js"></script>

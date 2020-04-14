@@ -29,9 +29,7 @@ impl Automaton {
     pub fn new(width: usize, height: usize) -> Self {
         utils::set_panic_hook();
 
-        let cells = (0..width * height)
-            .map(|_| if js_sys::Math::random() < 0.5 { 1 } else { 0 })
-            .collect();
+        let cells = vec![0; width * height];
         let neighbor_deltas = get_neighbor_deltas(width, height);
 
         Self {
@@ -125,6 +123,19 @@ impl Automaton {
         for cell in &mut self.cells {
             *cell = n;
         }
+        self.reset_generation();
+    }
+
+    /// Randomizes the cell state of all the automaton's cells.
+    pub fn randomize_cells(&mut self, n: f64) {
+        for cell in &mut self.cells {
+            *cell = if js_sys::Math::random() < n / 100.0 {
+                1
+            } else {
+                0
+            };
+        }
+        self.reset_generation();
     }
 
     /// Returns the number of generations elapsed.
@@ -171,6 +182,11 @@ impl Automaton {
                 _ => count,
             }
         })
+    }
+
+    /// Resets the generation count.
+    fn reset_generation(&mut self) {
+        self.generation = 0;
     }
 }
 

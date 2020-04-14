@@ -2,6 +2,7 @@ use std::iter;
 use wasm_bindgen_test::wasm_bindgen_test;
 use wasm_game_of_life::Automaton;
 
+/// flatten a slice of tuples that contain (x, y) locations of cells
 fn flatten_locations(locations: &[(usize, usize)]) -> Vec<usize> {
     locations
         .iter()
@@ -9,6 +10,7 @@ fn flatten_locations(locations: &[(usize, usize)]) -> Vec<usize> {
         .collect()
 }
 
+/// build an automaton with width, height, and locations of live cells
 fn build_automaton(width: usize, height: usize, locations: &[(usize, usize)]) -> Automaton {
     let mut a = Automaton::new(width, height);
     a.set_width(width);
@@ -89,7 +91,7 @@ mod tests {
     }
 
     #[wasm_bindgen_test]
-    pub fn test_automaton_wrapping_1() {
+    pub fn test_automaton_wrapping() {
         let mut a = build_automaton(2, 2, &[(0, 0), (0, 1)]);
         let a_1 = build_automaton(2, 2, &[(0, 0), (0, 1)]);
 
@@ -98,7 +100,7 @@ mod tests {
     }
 
     #[wasm_bindgen_test]
-    pub fn test_automaton_wrapping_2() {
+    pub fn test_automaton_tick() {
         let mut a = build_automaton(6, 6, &[(1, 2), (2, 3), (3, 1), (3, 2), (3, 3)]);
         let a_1 = build_automaton(6, 6, &[(2, 1), (2, 3), (3, 2), (3, 3), (4, 2)]);
 

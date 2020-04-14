@@ -15,10 +15,13 @@ canvas.height = (CELL_SIZE + 1) * height + 1;
 canvas.width = (CELL_SIZE + 1) * width + 1;
 
 const context = canvas.getContext('2d');
+
 let animationId = null;
+let stepSize = 1;
+let randomizePercent = 50;
 
 const render = () => {
-  automaton.step(1);
+  automaton.step(stepSize);
   updateGeneration();
 
   drawGrid();
@@ -87,12 +90,12 @@ const playPauseButton = document.getElementById('play-pause');
 const isPaused = () => animationId === null;
 
 const play = () => {
-  playPauseButton.textContent = 'Pause';
+  playPauseButton.innerText = 'Pause';
   render();
 };
 
 const pause = () => {
-  playPauseButton.textContent = 'Start';
+  playPauseButton.innerText = 'Start';
   cancelAnimationFrame(animationId);
   animationId = null;
 };
@@ -105,10 +108,34 @@ playPauseButton.addEventListener('click', (e) => {
   }
 });
 
-const generation = document.getElementById('generation');
+const generationSpan = document.getElementById('generation');
 const updateGeneration = () => {
-  generation.textContent = automaton.generation();
+  generationSpan.innerText = automaton.generation();
 };
+
+let stepSizeInput = document.getElementById('step-size');
+stepSizeInput.addEventListener('change', (e) => {
+  stepSize = stepSizeInput.value;
+});
+
+document.getElementById('reset').addEventListener('click', (e) => {
+  automaton.set_all_cells(0);
+  drawGrid();
+  drawCells();
+  updateGeneration();
+});
+
+document.getElementById('randomize').addEventListener('click', (e) => {
+  automaton.randomize_cells(randomizePercent);
+  drawGrid();
+  drawCells();
+  updateGeneration();
+});
+
+let randomizePercentInput = document.getElementById('randomize-percent');
+randomizePercentInput.addEventListener('change', (e) => {
+  randomizePercent = randomizePercentInput.value;
+});
 
 drawGrid();
 drawCells();
