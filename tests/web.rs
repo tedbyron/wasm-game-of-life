@@ -93,7 +93,7 @@ mod tests {
         let mut a = build_automaton(2, 2, &[(0, 0), (0, 1)]);
         let a_1 = build_automaton(2, 2, &[(0, 0), (0, 1)]);
 
-        a.step();
+        a.step(1);
         assert_eq!(a.cells_vec(), a_1.cells_vec());
     }
 
@@ -102,7 +102,7 @@ mod tests {
         let mut a = build_automaton(6, 6, &[(1, 2), (2, 3), (3, 1), (3, 2), (3, 3)]);
         let a_1 = build_automaton(6, 6, &[(2, 1), (2, 3), (3, 2), (3, 3), (4, 2)]);
 
-        a.step();
+        a.step(1);
         assert_eq!(a.cells_vec(), a_1.cells_vec());
     }
 }

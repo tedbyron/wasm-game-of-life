@@ -18,7 +18,7 @@ const context = canvas.getContext('2d');
 let animationId = null;
 
 const render = () => {
-  automaton.step();
+  automaton.step(1);
   updateGeneration();
 
   drawGrid();

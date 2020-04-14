@@ -56,6 +56,7 @@ impl Automaton {
     /// `new_width` is less than `width`, the automaton's rows are simply
     /// truncated.
     pub fn set_width(&mut self, new_width: usize) {
+        // TODO: minimize allocations
         self.cells = self
             .cells
             .chunks_exact(self.width)
@@ -87,9 +88,8 @@ impl Automaton {
         self.neighbor_deltas = get_neighbor_deltas(self.width, new_height);
     }
 
-    /// Toggles the state of a cell. If the cell is dead, it is set to 1 (alive,
-    /// first-generation). If the cell is any other state, it is set to 0
-    /// (dead).
+    /// Toggles the state of a cell. If the cell state is 0, it is set to 1. If
+    /// the cell is any other state, it is set to 0.
     pub fn cell_toggle(&mut self, row: usize, col: usize) {
         let idx = self.index(row, col);
         self.cells[idx] = match self.cells[idx] {
@@ -110,13 +110,9 @@ impl Automaton {
         self.cells.clone()
     }
 
-    /// Sets the state of cells in `locations` to 1 (alive, first-generation).
-    pub fn set_cells(&mut self, locations: &[usize]) {
-        for (&row, &col) in locations
-            .iter()
-            .step_by(2)
-            .zip(locations.iter().skip(1).step_by(2))
-        {
+    /// Sets the state of cells in `locations` to 1.
+    pub fn set_cells(&mut self, cells: &[usize]) {
+        for (&row, &col) in cells.iter().step_by(2).zip(cells.iter().skip(1).step_by(2)) {
             let idx = self.index(row, col);
             if let Some(cell) = self.cells.get_mut(idx) {
                 *cell = 1;
@@ -138,23 +134,25 @@ impl Automaton {
     }
 
     /// Calculates and sets the next state of all cells in the automaton.
-    pub fn step(&mut self) {
-        let mut cells_next = self.cells.clone();
+    pub fn step(&mut self, n: usize) {
+        for _ in 0..n {
+            let mut cells_next = self.cells.clone();
 
-        for row in 0..self.height {
-            for col in 0..self.width {
-                let idx = self.index(row, col);
+            for row in 0..self.height {
+                for col in 0..self.width {
+                    let idx = self.index(row, col);
 
-                cells_next[idx] = match (self.cells[idx], self.neighbor_count(row, col)) {
-                    (1, neighbors) if neighbors < 2 || neighbors > 3 => 0,
-                    (1, _) | (0, 3) => 1,
-                    _ => 0,
-                };
+                    cells_next[idx] = match (self.cells[idx], self.neighbor_count(row, col)) {
+                        (1, neighbors) if neighbors < 2 || neighbors > 3 => 0,
+                        (1, _) | (0, 3) => 1,
+                        _ => 0,
+                    };
+                }
             }
-        }
 
-        self.cells = cells_next;
-        self.generation += 1;
+            self.cells = cells_next;
+            self.generation += 1;
+        }
     }
 
     /// Returns the index of a cell in the automaton.
