@@ -88,19 +88,19 @@ canvas.addEventListener('click', (e) => {
 
 const generationSpan = document.getElementById('generation');
 const updateGeneration = () => {
-  generationSpan.innerText = automaton.generation();
+  generationSpan.textContent = automaton.generation();
 };
 
 const playPauseButton = document.getElementById('play-pause');
 const isPaused = () => animationId === null;
 
 const play = () => {
-  playPauseButton.innerText = 'Pause';
+  playPauseButton.textContent = 'Pause';
   render();
 };
 
 const pause = () => {
-  playPauseButton.innerText = 'Start';
+  playPauseButton.textContent = 'Start';
   cancelAnimationFrame(animationId);
   animationId = null;
 };
