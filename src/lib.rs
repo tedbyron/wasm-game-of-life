@@ -87,6 +87,17 @@ impl Automaton {
         self.neighbor_deltas = get_neighbor_deltas(self.width, new_height);
     }
 
+    /// Toggles the state of a cell. If the cell is dead, it is set to 1 (alive,
+    /// first-generation). If the cell is any other state, it is set to 0
+    /// (dead).
+    pub fn cell_toggle(&mut self, row: usize, col: usize) {
+        let idx = self.index(row, col);
+        self.cells[idx] = match self.cells[idx] {
+            0 => 1,
+            _ => 0,
+        };
+    }
+
     /// Returns the automaton's cells as a raw pointer.
     #[must_use]
     pub fn cells(&self) -> *const u8 {
@@ -120,6 +131,7 @@ impl Automaton {
         }
     }
 
+    /// Returns the number of generations elapsed.
     #[must_use]
     pub fn generation(&self) -> usize {
         self.generation
