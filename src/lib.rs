@@ -33,7 +33,16 @@ impl Automaton {
 
         let cells = vec![0; width * height];
         let cells_step = vec![0; width * height];
-        let neighbor_deltas = get_neighbor_deltas(width, height);
+        let neighbor_deltas = [
+            [height - 1, width - 1],
+            [height - 1, 0],
+            [height - 1, 1],
+            [0, width - 1],
+            [0, 1],
+            [1, width - 1],
+            [1, 0],
+            [1, 1],
+        ];
 
         Self {
             width,
@@ -79,7 +88,7 @@ impl Automaton {
         self.cells_step
             .resize_with(new_width * self.height, Default::default);
         self.width = new_width;
-        self.neighbor_deltas = get_neighbor_deltas(new_width, self.height);
+        self.set_neighbor_deltas(new_width, self.height);
     }
 
     /// Returns the height (vertical length) of the automaton.
@@ -100,7 +109,7 @@ impl Automaton {
         self.cells_step
             .resize_with(self.width * new_height, Default::default);
         self.height = new_height;
-        self.neighbor_deltas = get_neighbor_deltas(self.width, new_height);
+        self.set_neighbor_deltas(self.width, new_height);
     }
 
     /// Toggles the state of a cell. If the cell state is 0, it is set to 1. If
@@ -197,25 +206,25 @@ impl Automaton {
         })
     }
 
+    /// Returns the offsets of neighboring cell locations; these deltas are required
+    /// for an automaton's `neighbors` method.
+    fn set_neighbor_deltas(&mut self, width: usize, height: usize) {
+        self.neighbor_deltas = [
+            [height - 1, width - 1],
+            [height - 1, 0],
+            [height - 1, 1],
+            [0, width - 1],
+            [0, 1],
+            [1, width - 1],
+            [1, 0],
+            [1, 1],
+        ]
+    }
+
     /// Resets the generation count.
     fn reset_generation(&mut self) {
         self.generation = 0;
     }
-}
-
-/// Returns the offsets of neighboring cell locations; these deltas are required
-/// for an automaton's `neighbors` method.
-fn get_neighbor_deltas(width: usize, height: usize) -> [[usize; 2]; 8] {
-    [
-        [height - 1, width - 1],
-        [height - 1, 0],
-        [height - 1, 1],
-        [0, width - 1],
-        [0, 1],
-        [1, width - 1],
-        [1, 0],
-        [1, 1],
-    ]
 }
 
 // Functions for integration tests.
