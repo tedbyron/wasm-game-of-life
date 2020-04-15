@@ -6,6 +6,7 @@
 mod utils;
 
 use js_sys;
+use std::{cmp::Ordering, iter, mem};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 #[cfg(feature = "wee_alloc")]
@@ -18,24 +19,27 @@ pub struct Automaton {
     width: usize,
     height: usize,
     cells: Vec<u8>,
+    cells_step: Vec<u8>,
     generation: usize,
     neighbor_deltas: [[usize; 2]; 8],
 }
 
 #[wasm_bindgen]
 impl Automaton {
-    /// Constructs a new automaton with cell states randomly assigned to 0 or 1.
+    /// Constructs a new automaton with all cell states set to 0.
     #[must_use]
     pub fn new(width: usize, height: usize) -> Self {
         utils::set_panic_hook();
 
         let cells = vec![0; width * height];
+        let cells_step = vec![0; width * height];
         let neighbor_deltas = get_neighbor_deltas(width, height);
 
         Self {
             width,
             height,
             cells,
+            cells_step,
             generation: 0,
             neighbor_deltas,
         }
@@ -50,20 +54,30 @@ impl Automaton {
     /// Resizes the automaton so that `width` is equal to `new_width`.
     ///
     /// If `new_width` is greater than `width`, the automaton's rows are
-    /// extended by the difference, with each additional cell filled with 0. If
-    /// `new_width` is less than `width`, the automaton's rows are simply
+    /// extended by the difference, with each additional column filled with 0.
+    /// If `new_width` is less than `width`, the automaton's rows are simply
     /// truncated.
     pub fn set_width(&mut self, new_width: usize) {
-        // TODO: minimize allocations
-        self.cells = self
-            .cells
-            .chunks_exact(self.width)
-            .flat_map(|chunk| {
-                let mut chunk_vec = chunk.to_vec();
-                chunk_vec.resize(new_width, 0);
-                chunk_vec
-            })
-            .collect();
+        match new_width.cmp(&self.width) {
+            Ordering::Greater => {
+                let width_diff = new_width - self.width;
+                self.cells.reserve_exact(width_diff * self.height);
+                for _ in 0..self.height {
+                    self.cells.extend(iter::repeat(0).take(width_diff));
+                    self.cells.rotate_right(new_width);
+                }
+            }
+            Ordering::Less => {
+                let width_diff = self.width - new_width;
+                for _ in 0..self.height {
+                    self.cells.truncate(self.cells.len() - width_diff);
+                    self.cells.rotate_right(new_width);
+                }
+            }
+            Ordering::Equal => (),
+        }
+        self.cells_step
+            .resize_with(new_width * self.height, Default::default);
         self.width = new_width;
         self.neighbor_deltas = get_neighbor_deltas(new_width, self.height);
     }
@@ -76,12 +90,15 @@ impl Automaton {
 
     /// Resizes the automaton so that `height` is equal to `new_height`.
     ///
-    /// If `new_height` is greater than `height`, the automaton's grid is
+    /// If `new_height` is greater than `height`, the automaton's columns are
     /// extended by the difference, with each additional row filled with 0. If
-    /// `new_height` is less than `height`, the automaton's grid is simply
+    /// `new_height` is less than `height`, the automaton's columns are simply
     /// truncated.
     pub fn set_height(&mut self, new_height: usize) {
-        self.cells.resize(self.width * new_height, 0);
+        self.cells
+            .resize_with(self.width * new_height, Default::default);
+        self.cells_step
+            .resize_with(self.width * new_height, Default::default);
         self.height = new_height;
         self.neighbor_deltas = get_neighbor_deltas(self.width, new_height);
     }
@@ -93,19 +110,13 @@ impl Automaton {
         self.cells[idx] = match self.cells[idx] {
             0 => 1,
             _ => 0,
-        };
+        }
     }
 
     /// Returns the automaton's cells as a raw pointer.
     #[must_use]
     pub fn cells(&self) -> *const u8 {
         self.cells.as_ptr()
-    }
-
-    /// Returns a copy of the automaton's cells.
-    #[must_use]
-    pub fn cells_vec(&self) -> Vec<u8> {
-        self.cells.clone()
     }
 
     /// Sets the state of cells in `locations` to 1.
@@ -127,6 +138,9 @@ impl Automaton {
     }
 
     /// Randomizes the cell state of all the automaton's cells.
+    ///
+    /// Loops through the automaton's cells and if `js_sys::Math::random` is
+    /// less than the percentage `n`, the cell state is set to 1.
     pub fn randomize_cells(&mut self, n: f64) {
         for cell in &mut self.cells {
             *cell = if js_sys::Math::random() < n / 100.0 {
@@ -147,21 +161,19 @@ impl Automaton {
     /// Calculates and sets the next state of all cells in the automaton.
     pub fn step(&mut self, n: usize) {
         for _ in 0..n {
-            let mut cells_next = self.cells.clone();
-
             for row in 0..self.height {
                 for col in 0..self.width {
                     let idx = self.index(row, col);
 
-                    cells_next[idx] = match (self.cells[idx], self.neighbor_count(row, col)) {
+                    self.cells_step[idx] = match (self.cells[idx], self.neighbors(row, col)) {
                         (1, neighbors) if neighbors < 2 || neighbors > 3 => 0,
                         (1, _) | (0, 3) => 1,
                         _ => 0,
-                    };
+                    }
                 }
             }
 
-            self.cells = cells_next;
+            mem::swap(&mut self.cells, &mut self.cells_step);
         }
 
         self.generation += n;
@@ -173,7 +185,7 @@ impl Automaton {
     }
 
     /// Returns the count of a cell's live, first-generation neighbors.
-    fn neighbor_count(&self, row: usize, col: usize) -> u8 {
+    fn neighbors(&self, row: usize, col: usize) -> u8 {
         self.neighbor_deltas.iter().fold(0, |count, delta| {
             match self.cells[self.index(
                 (row + delta[0]) % self.height,
@@ -192,7 +204,7 @@ impl Automaton {
 }
 
 /// Returns the offsets of neighboring cell locations; these deltas are required
-/// for an automaton's `get_neighbor_count` method.
+/// for an automaton's `neighbors` method.
 fn get_neighbor_deltas(width: usize, height: usize) -> [[usize; 2]; 8] {
     [
         [height - 1, width - 1],
@@ -204,4 +216,13 @@ fn get_neighbor_deltas(width: usize, height: usize) -> [[usize; 2]; 8] {
         [1, 0],
         [1, 1],
     ]
+}
+
+// Functions for integration tests.
+impl Automaton {
+    /// Get a clone of the automaton's cells.
+    #[must_use]
+    pub fn get_cells(&self) -> Vec<u8> {
+        self.cells.clone()
+    }
 }
