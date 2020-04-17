@@ -1,7 +1,8 @@
 #![warn(clippy::all, clippy::pedantic)]
+#![allow(clippy::doc_markdown)]
 
 //! Cellular automaton simulation tools targeting
-//! [`WebAssembly`](https://webassembly.org).
+//! [WebAssembly](https://webassembly.org).
 
 mod automaton;
 pub use automaton::Automaton;

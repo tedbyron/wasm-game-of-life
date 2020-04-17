@@ -5,12 +5,8 @@ use std::cmp::Ordering;
 use std::iter;
 use std::mem;
 
-use js_sys;
+use js_sys::Math;
 use wasm_bindgen::prelude::wasm_bindgen;
-
-#[cfg(feature = "wee_alloc")]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 /// A two-dimensional cellular automaton with a finite grid of cells.
 #[wasm_bindgen]
@@ -156,11 +152,7 @@ impl Automaton {
     /// less than the percentage `n`, the cell state is set to 1.
     pub fn randomize_cells(&mut self, n: f64) {
         for cell in &mut self.cells {
-            *cell = if js_sys::Math::random() < n / 100.0 {
-                1
-            } else {
-                0
-            };
+            *cell = if Math::random() < n / 100.0 { 1 } else { 0 };
         }
     }
 
