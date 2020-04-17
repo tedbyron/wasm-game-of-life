@@ -1,18 +1,19 @@
 import { Automaton } from 'wasm-game-of-life';
 import { memory } from 'wasm-game-of-life/wasm_game_of_life_bg';
 
-const CELL_SIZE = 5;
-const GRID_COLOR = '#cccccc';
-const DEAD_COLOR = '#ffffff';
-const ALIVE_COLOR = '#000000';
+const cell_size = 5;
+const grid_color = '#cccccc';
+const dead_color = '#ffffff';
+const alive_color = '#000000';
 
-const automaton = Automaton.new(64, 64);
-const width = automaton.width();
-const height = automaton.height();
+let width = 64;
+let height = 64;
+let generation = 0;
+const automaton = Automaton.new(width, height);
 
 const canvas = document.getElementById('game-canvas');
-canvas.height = (CELL_SIZE + 1) * height + 1;
-canvas.width = (CELL_SIZE + 1) * width + 1;
+canvas.height = (cell_size + 1) * height + 1;
+canvas.width = (cell_size + 1) * width + 1;
 
 const context = canvas.getContext('2d');
 
@@ -22,26 +23,27 @@ let randomizePercent = 50;
 
 const render = () => {
   automaton.step(stepSize);
-  updateGeneration();
 
   drawGrid();
   drawCells();
+
+  incrementGeneration();
 
   animationId = requestAnimationFrame(render);
 };
 
 const drawGrid = () => {
   context.beginPath();
-  context.strokeStyle = GRID_COLOR;
+  context.strokeStyle = grid_color;
 
   for (let i = 0; i <= width; i++) {
-    context.moveTo(i * (CELL_SIZE + 1) + 1, 0);
-    context.lineTo(i * (CELL_SIZE + 1) + 1, (CELL_SIZE + 1) * height + 1);
+    context.moveTo(i * (cell_size + 1) + 1, 0);
+    context.lineTo(i * (cell_size + 1) + 1, (cell_size + 1) * height + 1);
   }
 
   for (let j = 0; j <= height; j++) {
-    context.moveTo(0, j * (CELL_SIZE + 1) + 1);
-    context.lineTo((CELL_SIZE + 1) * width + 1, j * (CELL_SIZE + 1) + 1);
+    context.moveTo(0, j * (cell_size + 1) + 1);
+    context.lineTo((cell_size + 1) * width + 1, j * (cell_size + 1) + 1);
   }
 
   context.stroke();
@@ -56,14 +58,14 @@ const drawCells = () => {
   for (let row = 0; row < height; row++) {
     for (let col = 0; col < width; col++) {
       context.fillStyle = cells[row * width + col] === 0
-        ? DEAD_COLOR
-        : ALIVE_COLOR;
+        ? dead_color
+        : alive_color;
 
       context.fillRect(
-        col * (CELL_SIZE + 1) + 1,
-        row * (CELL_SIZE + 1) + 1,
-        CELL_SIZE,
-        CELL_SIZE
+        col * (cell_size + 1) + 1,
+        row * (cell_size + 1) + 1,
+        cell_size,
+        cell_size
       );
     }
   }
@@ -77,18 +79,23 @@ canvas.addEventListener('click', (e) => {
   const scaleY = canvas.height / boundingRect.height;
   const canvasLeft = (e.clientX - boundingRect.left) * scaleX;
   const canvasTop = (e.clientY - boundingRect.top) * scaleY;
-  const row = Math.min(Math.floor(canvasTop / (CELL_SIZE + 1)), height - 1);
-  const col = Math.min(Math.floor(canvasLeft / (CELL_SIZE + 1)), width - 1);
+  const row = Math.min(Math.floor(canvasTop / (cell_size + 1)), height - 1);
+  const col = Math.min(Math.floor(canvasLeft / (cell_size + 1)), width - 1);
 
-  automaton.cell_toggle(row, col);
+  automaton.toggle_cell(row, col);
 
   drawGrid();
   drawCells();
 })
 
 const generationSpan = document.getElementById('generation');
-const updateGeneration = () => {
-  generationSpan.textContent = automaton.generation();
+const incrementGeneration = () => {
+  generation += stepSize;
+  generationSpan.textContent = generation.toString();
+};
+const resetGeneration = () => {
+  generation = 0;
+  generationSpan.textContent = generation.toString();
 };
 
 const playPauseButton = document.getElementById('play-pause');
@@ -117,26 +124,29 @@ document.getElementById('step').addEventListener('click', (e) => {
   automaton.step(stepSize);
   drawGrid();
   drawCells();
-  updateGeneration();
+
+  incrementGeneration();
 });
 
 let stepSizeInput = document.getElementById('step-size');
 stepSizeInput.addEventListener('change', (e) => {
-  stepSize = stepSizeInput.value;
+  stepSize = parseInt(stepSizeInput.value, 10);
 });
 
 document.getElementById('reset').addEventListener('click', (e) => {
   automaton.set_all_cells(0);
   drawGrid();
   drawCells();
-  updateGeneration();
+
+  resetGeneration();
 });
 
 document.getElementById('randomize').addEventListener('click', (e) => {
   automaton.randomize_cells(randomizePercent);
   drawGrid();
   drawCells();
-  updateGeneration();
+
+  resetGeneration();
 });
 
 let randomizePercentInput = document.getElementById('randomize-percent');
