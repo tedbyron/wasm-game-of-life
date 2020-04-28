@@ -7,14 +7,17 @@ pub struct Rules {
 }
 
 impl Rules {
-    /// Constructs a new ruleset for an automaton from a survival rule `s`, a
-    /// birth rule `b`, and a maximum number of possible cell states `c`.
+    /// Constructs a new ruleset for an automaton.
+    ///
+    /// - `s`: survival rule
+    /// - `b`: birth rule
+    /// - `c`: maximum number of possible cell states
     pub fn new(s: &[u8], b: &[u8], c: u8) -> Self {
         Self {
             survival: s.to_vec(),
             birth: b.to_vec(),
             generation: c - 1, // E.g. if `c` is 2, cells in the automaton have
-                               // 2 possible states, 0 or 1, the maximum of
+                               // 2 possible states (0..=c - 1), the maximum of
                                // which is 1.
         }
     }

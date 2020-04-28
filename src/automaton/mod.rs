@@ -66,6 +66,7 @@ impl Automaton {
                     self.cells.splice(i..i, iter::repeat(0).take(width_diff));
                 }
                 // TODO: benchmark against the following alternative
+                // let width_diff = new_width - self.width;
                 // for _ in 0..self.height {
                 //     self.cells.extend(iter::repeat(0).take(width_diff));
                 //     self.cells.rotate_right(new_width);
@@ -81,6 +82,7 @@ impl Automaton {
                     self.cells.splice(start..end, iter::empty());
                 }
                 // TODO: benchmark against the following alternative
+                // let width_diff = self.width - new_width;
                 // for _ in 0..self.height {
                 //     self.cells.truncate(self.cells.len() - width_diff);
                 //     self.cells.rotate_right(new_width);
